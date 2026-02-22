@@ -1,0 +1,47 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "F5 (CMake target)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${command:cmake.launchTargetPath}",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "CMake: build",
+      "args": [
+        "dummy.txt",
+        "${workspaceFolder}/pt000023.bin",
+        "${workspaceFolder}/pt000023.png"
+      ],
+      "MIMode": "gdb",
+      "internalConsoleOptions": "neverOpen",
+      "symbolLoadInfo": {
+        "loadAll": false,
+        "exceptionList": "gis;*/gis"
+      },
+      "environment": [
+        {
+          "name": "DEBUGINFOD_URLS",
+          "value": ""
+        }
+      ],
+      "setupCommands": [
+        {
+          "description": "Disable debuginfod downloads",
+          "text": "set debuginfod enabled off",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Do not stop on shared library events",
+          "text": "set stop-on-solib-events 0",
+          "ignoreFailures": true
+        },
+        {
+          "description": "Disable auto loading symbols from all shared libs",
+          "text": "set auto-solib-add off",
+          "ignoreFailures": true
+        }
+      ]
+    }
+  ]
+}
