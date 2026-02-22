@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "F5 (CMake target)",
+      "name": "CMake Launch",
       "type": "cppdbg",
       "request": "launch",
       "program": "${command:cmake.launchTargetPath}",
@@ -10,8 +10,8 @@
       "preLaunchTask": "CMake: build",
       "args": [
         "dummy.txt",
-        "${workspaceFolder}/assets/pt000023.bin",
-        "${workspaceFolder}/assets/pt000023.png"
+        "${workspaceFolder}/data/pt000023.bin",
+        "${workspaceFolder}/data/pt000023.png"
       ],
       "MIMode": "gdb",
       "internalConsoleOptions": "neverOpen",

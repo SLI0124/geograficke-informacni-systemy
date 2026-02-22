@@ -22,5 +22,5 @@ cmake --build build --parallel
 ## ▶️ Spuštění
 
 ```bash
-./build/gis dummy.txt ./assets/pt000023.bin ./assets/pt000023.png
+./build/gis dummy.txt ./data/pt000023.bin ./data/pt000023.png
 ```
