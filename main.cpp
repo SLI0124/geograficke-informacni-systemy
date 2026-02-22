@@ -96,10 +96,48 @@ void flood_fill(cv::Mat &edgemap_8uc1_img, cv::Mat &heightmap_show_8uc3_img, con
  */
 void get_min_max(const char *filename, float *a_min_x, float *a_max_x, float *a_min_y, float *a_max_y, float *a_min_z, float *a_max_z)
 {
-    FILE *f = NULL;
+    FILE *f = fopen(filename, "rb");
+    if (!f)
+    {
+        perror("get_min_max: fopen");
+        exit(1);
+    }
+
     float x, y, z;
-    float min_x, min_y, min_z, max_x, max_y, max_z;
     int l_type;
+    bool first = true;
+
+    /* each record: float x,y,z; int l_type */
+    while (fread(&x, sizeof(float), 1, f) == 1 &&
+           fread(&y, sizeof(float), 1, f) == 1 &&
+           fread(&z, sizeof(float), 1, f) == 1 &&
+           fread(&l_type, sizeof(int), 1, f) == 1)
+    {
+        if (first)
+        {
+            *a_min_x = *a_max_x = x;
+            *a_min_y = *a_max_y = y;
+            *a_min_z = *a_max_z = z;
+            first = false;
+        }
+        else
+        {
+            if (x < *a_min_x)
+                *a_min_x = x;
+            if (x > *a_max_x)
+                *a_max_x = x;
+            if (y < *a_min_y)
+                *a_min_y = y;
+            if (y > *a_max_y)
+                *a_max_y = y;
+            if (z < *a_min_z)
+                *a_min_z = z;
+            if (z > *a_max_z)
+                *a_max_z = z;
+        }
+    }
+
+    fclose(f);
 }
 
 /**
