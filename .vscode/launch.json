@@ -10,8 +10,8 @@
       "preLaunchTask": "CMake: build",
       "args": [
         "dummy.txt",
-        "${workspaceFolder}/pt000023.bin",
-        "${workspaceFolder}/pt000023.png"
+        "${workspaceFolder}/assets/pt000023.bin",
+        "${workspaceFolder}/assets/pt000023.png"
       ],
       "MIMode": "gdb",
       "internalConsoleOptions": "neverOpen",
