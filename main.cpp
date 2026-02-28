@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include <cmath>
+#include <string>
 
 #include <opencv2/opencv.hpp>
 
@@ -159,10 +160,10 @@ void fill_image(const char *filename, cv::Mat &heightmap_8uc1_img, float min_x, 
     float *sum_height = NULL;
     int *sum_height_count = NULL;
 
-    // zjistime sirku a vysku obrazu
-    delta_x = round(max_x - min_x + 0.5f);
-    delta_y = round(max_y - min_y + 0.5f);
-    delta_z = round(max_z - min_z + 0.5f);
+    // use exact image dimensions to avoid any rounding mismatch
+    delta_x = heightmap_8uc1_img.cols;
+    delta_y = heightmap_8uc1_img.rows;
+    delta_z = cvRound(max_z - min_z + 0.5f);
 
     stride = delta_x;
 
@@ -170,13 +171,79 @@ void fill_image(const char *filename, cv::Mat &heightmap_8uc1_img, float min_x, 
     // We allocate helper arrays, in which we store values from the lidar
     // and the number of these values for each pixel
 
+    sum_height = (float *)calloc((size_t)delta_x * (size_t)delta_y, sizeof(float));
+    sum_height_count = (int *)calloc((size_t)delta_x * (size_t)delta_y, sizeof(int));
+    if (!sum_height || !sum_height_count)
+    {
+        fprintf(stderr, "fill_image: out of memory\n");
+        free(sum_height);
+        free(sum_height_count);
+        exit(1);
+    }
+
     // 2:
     // go through the file and assign values to the field
     // beware that in S-JTSK the beginning of the co-ordinate system is at the bottom left,
     // while in the picture it is top left
 
+    f = fopen(filename, "rb");
+    if (!f)
+    {
+        perror("fill_image: fopen");
+        free(sum_height);
+        free(sum_height_count);
+        exit(1);
+    }
+
+    while (fread(&fx, sizeof(float), 1, f) == 1 &&
+           fread(&fy, sizeof(float), 1, f) == 1 &&
+           fread(&fz, sizeof(float), 1, f) == 1 &&
+           fread(&l_type, sizeof(int), 1, f) == 1)
+    {
+        x = cvRound(fx - min_x);
+        y = cvRound(max_y - fy);
+
+        if (x < 0 || x >= delta_x || y < 0 || y >= delta_y)
+        {
+            continue;
+        }
+
+        sum_height[y * stride + x] += fz;
+        sum_height_count[y * stride + x] += 1;
+        num_points++;
+    }
+
+    fclose(f);
+
     // 3:
     // assign values from the helper field into the image
+
+    range = max_z - min_z;
+    if (range <= 0.0f)
+    {
+        range = 1.0f;
+    }
+
+    for (y = 0; y < delta_y; y++)
+    {
+        for (x = 0; x < delta_x; x++)
+        {
+            int idx = y * stride + x;
+            uchar value = 0;
+
+            if (sum_height_count[idx] > 0)
+            {
+                float avg_height = sum_height[idx] / (float)sum_height_count[idx];
+                float normalized = ((avg_height - min_z) / range) * 255.0f;
+                value = cv::saturate_cast<uchar>(cvRound(normalized));
+            }
+
+            heightmap_8uc1_img.at<uchar>(y, x) = value;
+        }
+    }
+
+    free(sum_height);
+    free(sum_height_count);
 }
 
 void make_edges(const cv::Mat &src_8uc1_img, cv::Mat &edgemap_8uc1_img)
@@ -223,23 +290,21 @@ void process_lidar(const char *txt_filename, const char *bin_filename, const cha
     printf("delta z: %f\n", delta_z);
 
     // create images according to data from the source file
-    /*
-    heightmap_8uc1_img = cv::Mat( cvSize( cvRound( delta_x + 0.5f ), cvRound( delta_y + 0.5f ) ), CV_8UC1 );
-    heightmap_show_8uc3_img = cv::Mat( cvSize( cvRound( delta_x + 0.5f ), cvRound( delta_y + 0.5f ) ), CV_8UC3 );
-    edgemap_8uc1_img = cv::Mat( cvSize( cvRound( delta_x + 0.5f ), cvRound( delta_y + 0.5f ) ), CV_8UC3 );
+    heightmap_8uc1_img = cv::Mat(cv::Size(cvRound(delta_x + 0.5f), cvRound(delta_y + 0.5f)), CV_8UC1);
+    heightmap_show_8uc3_img = cv::Mat(cv::Size(cvRound(delta_x + 0.5f), cvRound(delta_y + 0.5f)), CV_8UC3);
+    edgemap_8uc1_img = cv::Mat(cv::Size(cvRound(delta_x + 0.5f), cvRound(delta_y + 0.5f)), CV_8UC1);
 
-    create_windows( heightmap_8uc1_img.cols, heightmap_8uc1_img.rows );
-    mouse_probe = new MouseProbe( heightmap_8uc1_img, heightmap_show_8uc3_img, edgemap_8uc1_img );
+    create_windows(heightmap_8uc1_img.cols, heightmap_8uc1_img.rows);
+    mouse_probe = new MouseProbe(heightmap_8uc1_img, heightmap_show_8uc3_img, edgemap_8uc1_img);
 
-    cv::setMouseCallback( STEP1_WIN_NAME, mouse_probe_handler, mouse_probe );
-    cv::setMouseCallback( STEP2_WIN_NAME, mouse_probe_handler, mouse_probe );
+    cv::setMouseCallback(STEP1_WIN_NAME, mouse_probe_handler, mouse_probe);
+    cv::setMouseCallback(STEP2_WIN_NAME, mouse_probe_handler, mouse_probe);
 
-    printf( "Image w=%d, h=%d\n", heightmap_8uc1_img.cols, heightmap_8uc1_img.rows );
-    */
+    printf("Image w=%d, h=%d\n", heightmap_8uc1_img.cols, heightmap_8uc1_img.rows);
 
     // fill the image with data from lidar scanning
-    // fill_image( bin_filename, heightmap_8uc1_img, min_x, max_x, min_y, max_y, min_z, max_z );
-    // cv::cvtColor( heightmap_8uc1_img, heightmap_show_8uc3_img, CV_GRAY2RGB );
+    fill_image(bin_filename, heightmap_8uc1_img, min_x, max_x, min_y, max_y, min_z, max_z);
+    cv::cvtColor(heightmap_8uc1_img, heightmap_show_8uc3_img, cv::COLOR_GRAY2RGB);
 
     // create edge map from the height image
     // make_edges( heightmap_8uc1_img, edgemap_8uc1_img );
@@ -250,19 +315,31 @@ void process_lidar(const char *txt_filename, const char *bin_filename, const cha
     // implement image dilatation and erosion
     // dilate_and_erode_edgemap( edgemap_8uc1_img );
 
-    // cv::imwrite( img_filename, heightmap_8uc1_img );
+    std::string output_filename = img_filename;
+    size_t dot_pos = output_filename.find_last_of('.');
+    if (dot_pos != std::string::npos)
+    {
+        output_filename.insert(dot_pos, "_heightmap");
+    }
+    else
+    {
+        output_filename += "_heightmap.png";
+    }
+
+    cv::imwrite(output_filename, heightmap_8uc1_img);
+    printf("Saved image to: %s\n", output_filename.c_str());
 
     // wait here for user input using (mouse clicking)
-    /*
-    while ( 1 ) {
-        cv::imshow( STEP1_WIN_NAME, heightmap_show_8uc3_img );
-        //cv::imshow( STEP2_WIN_NAME, edgemap_8uc1_img );
-        int key = cv::waitKey( 10 );
-        if ( key == 'q' ) {
+    while (1)
+    {
+        cv::imshow(STEP1_WIN_NAME, heightmap_show_8uc3_img);
+        // cv::imshow( STEP2_WIN_NAME, edgemap_8uc1_img );
+        int key = cv::waitKey(10);
+        if (key == 'q')
+        {
             break;
         }
     }
-    */
 }
 
 int main(int argc, char *argv[])
