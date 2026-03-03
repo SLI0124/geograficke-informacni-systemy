@@ -257,12 +257,78 @@ void make_edges(const cv::Mat &src_8uc1_img, cv::Mat &edgemap_8uc1_img)
  */
 void binarize_image(cv::Mat &src_8uc1_img)
 {
-    int x, y;
-    uchar value;
+    for (int y = 0; y < src_8uc1_img.rows; y++)
+    {
+        for (int x = 0; x < src_8uc1_img.cols; x++)
+        {
+            if (src_8uc1_img.at<uchar>(y, x) > 128)
+            {
+                src_8uc1_img.at<uchar>(y, x) = 255;
+            }
+            else
+            {
+                src_8uc1_img.at<uchar>(y, x) = 0;
+            }
+        }
+    }
 }
 
-void dilate_and_erode_edgemap(cv::Mat &edgemap_8uc1_img)
+void dilate_image(cv::Mat &src_8uc1_img, cv::Mat &dst_8uc1_img)
 {
+    dst_8uc1_img = src_8uc1_img.clone();
+    dst_8uc1_img.setTo(0); // initialize with black
+
+    for (int y = 1; y < src_8uc1_img.rows - 1; y++)
+    {
+        for (int x = 1; x < src_8uc1_img.cols - 1; x++)
+        {
+            if (src_8uc1_img.at<uchar>(y, x) == 255)
+            {
+                // Fill 3x3 mask with 255 in the output image
+                for (int my = -1; my <= 1; my++)
+                {
+                    for (int mx = -1; mx <= 1; mx++)
+                    {
+                        dst_8uc1_img.at<uchar>(y + my, x + mx) = 255;
+                    }
+                }
+            }
+        }
+    }
+}
+
+void erode_image(cv::Mat &src_8uc1_img, cv::Mat &dst_8uc1_img)
+{
+    dst_8uc1_img = src_8uc1_img.clone();
+
+    for (int y = 1; y < src_8uc1_img.rows - 1; y++)
+    {
+        for (int x = 1; x < src_8uc1_img.cols - 1; x++)
+        {
+            if (src_8uc1_img.at<uchar>(y, x) == 255)
+            {
+                bool has_zero_neighbor = false;
+                for (int my = -1; my <= 1; my++)
+                {
+                    for (int mx = -1; mx <= 1; mx++)
+                    {
+                        if (src_8uc1_img.at<uchar>(y + my, x + mx) != 255)
+                        {
+                            has_zero_neighbor = true;
+                            break;
+                        }
+                    }
+                    if (has_zero_neighbor)
+                        break;
+                }
+
+                if (has_zero_neighbor)
+                {
+                    dst_8uc1_img.at<uchar>(y, x) = 0;
+                }
+            }
+        }
+    }
 }
 
 void process_lidar(const char *txt_filename, const char *bin_filename, const char *img_filename)
@@ -307,33 +373,37 @@ void process_lidar(const char *txt_filename, const char *bin_filename, const cha
     cv::cvtColor(heightmap_8uc1_img, heightmap_show_8uc3_img, cv::COLOR_GRAY2RGB);
 
     // create edge map from the height image
-    // make_edges( heightmap_8uc1_img, edgemap_8uc1_img );
+    make_edges(heightmap_8uc1_img, edgemap_8uc1_img);
+
+    std::string base_output_filename = img_filename;
+    size_t dot_pos = base_output_filename.find_last_of('.');
+    std::string extension = (dot_pos != std::string::npos) ? base_output_filename.substr(dot_pos) : ".png";
+    std::string prefix = (dot_pos != std::string::npos) ? base_output_filename.substr(0, dot_pos) : base_output_filename;
+
+    cv::imwrite(prefix + "_canny" + extension, edgemap_8uc1_img);
 
     // binarize image, so we can easily process it in the next step
-    // binarize_image( edgemap_8uc1_img );
+    binarize_image(edgemap_8uc1_img);
 
     // implement image dilatation and erosion
-    // dilate_and_erode_edgemap( edgemap_8uc1_img );
+    cv::Mat dilated_img, eroded_img;
+    dilate_image(edgemap_8uc1_img, dilated_img);
+    cv::imwrite(prefix + "_dilated" + extension, dilated_img);
 
-    std::string output_filename = img_filename;
-    size_t dot_pos = output_filename.find_last_of('.');
-    if (dot_pos != std::string::npos)
-    {
-        output_filename.insert(dot_pos, "_heightmap");
-    }
-    else
-    {
-        output_filename += "_heightmap.png";
-    }
+    erode_image(dilated_img, eroded_img);
+    cv::imwrite(prefix + "_eroded" + extension, eroded_img);
 
-    cv::imwrite(output_filename, heightmap_8uc1_img);
-    printf("Saved image to: %s\n", output_filename.c_str());
+    // Update edgemap_8uc1_img for display
+    edgemap_8uc1_img = eroded_img;
+
+    cv::imwrite(prefix + "_heightmap" + extension, heightmap_8uc1_img);
+    printf("Saved images to: %s_*.png\n", prefix.c_str());
 
     // wait here for user input using (mouse clicking)
     while (1)
     {
         cv::imshow(STEP1_WIN_NAME, heightmap_show_8uc3_img);
-        // cv::imshow( STEP2_WIN_NAME, edgemap_8uc1_img );
+        cv::imshow(STEP2_WIN_NAME, edgemap_8uc1_img);
         int key = cv::waitKey(10);
         if (key == 'q')
         {
