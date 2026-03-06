@@ -73,7 +73,27 @@ void create_windows(const int width, const int height)
  */
 void fill_step(cv::Mat &edgemap_8uc1_img, cv::Mat &heightmap_show_8uc3_img, const int x, const int y, const uchar value)
 {
-    int width, height;
+    int width = edgemap_8uc1_img.cols;
+    int height = edgemap_8uc1_img.rows;
+
+    if (x < 0 || x >= width || y < 0 || y >= height)
+        return;
+
+    if (edgemap_8uc1_img.at<uchar>(y, x) != value)
+        return;
+
+    // Mark as visited in the reference image (the clone)
+    // We use a value that is different from 'value' to avoid infinite recursion
+    edgemap_8uc1_img.at<uchar>(y, x) = (value == 255) ? 0 : 255;
+
+    // Draw in the display image (Red color)
+    heightmap_show_8uc3_img.at<cv::Vec3b>(y, x) = cv::Vec3b(0, 0, 255);
+
+    // 4-neighborhood recursion
+    fill_step(edgemap_8uc1_img, heightmap_show_8uc3_img, x + 1, y, value);
+    fill_step(edgemap_8uc1_img, heightmap_show_8uc3_img, x - 1, y, value);
+    fill_step(edgemap_8uc1_img, heightmap_show_8uc3_img, x, y + 1, value);
+    fill_step(edgemap_8uc1_img, heightmap_show_8uc3_img, x, y - 1, value);
 
 } // fill_step
 
@@ -87,7 +107,15 @@ void fill_step(cv::Mat &edgemap_8uc1_img, cv::Mat &heightmap_show_8uc3_img, cons
  */
 void flood_fill(cv::Mat &edgemap_8uc1_img, cv::Mat &heightmap_show_8uc3_img, const int x, const int y)
 {
-    cv::Mat tmp_edgemap_8uc1_img;
+    if (x < 0 || x >= edgemap_8uc1_img.cols || y < 0 || y >= edgemap_8uc1_img.rows)
+        return;
+
+    uchar value = edgemap_8uc1_img.at<uchar>(y, x);
+
+    // According to the tutorial, we use a temporary image to prevent the original from being repainted (visited status)
+    cv::Mat tmp_edgemap_8uc1_img = edgemap_8uc1_img.clone();
+
+    fill_step(tmp_edgemap_8uc1_img, heightmap_show_8uc3_img, x, y, value);
 
 } // flood_fill
 
