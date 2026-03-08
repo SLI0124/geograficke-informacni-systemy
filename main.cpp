@@ -123,7 +123,7 @@ void flood_fill(cv::Mat &edgemap_8uc1_img, cv::Mat &heightmap_show_8uc3_img, con
  * Find the minimum and maximum coordinates in the file.
  * Note that the file is the S-JTSK coordinate system.
  */
-void get_min_max(const char *filename, float *a_min_x, float *a_max_x, float *a_min_y, float *a_max_y, float *a_min_z, float *a_max_z)
+bool get_min_max(const char *filename, float *a_min_x, float *a_max_x, float *a_min_y, float *a_max_y, float *a_min_z, float *a_max_z, int l_type_filter = -1)
 {
     FILE *f = fopen(filename, "rb");
     if (!f)
@@ -142,6 +142,9 @@ void get_min_max(const char *filename, float *a_min_x, float *a_max_x, float *a_
            fread(&z, sizeof(float), 1, f) == 1 &&
            fread(&l_type, sizeof(int), 1, f) == 1)
     {
+        if (l_type_filter != -1 && l_type != l_type_filter)
+            continue;
+
         if (first)
         {
             *a_min_x = *a_max_x = x;
@@ -167,6 +170,7 @@ void get_min_max(const char *filename, float *a_min_x, float *a_max_x, float *a_
     }
 
     fclose(f);
+    return !first;
 }
 
 /**
@@ -176,14 +180,13 @@ void get_min_max(const char *filename, float *a_min_x, float *a_max_x, float *a_
  * filename - file with binarny data
  * img - input image
  */
-void fill_image(const char *filename, cv::Mat &heightmap_8uc1_img, float min_x, float max_x, float min_y, float max_y, float min_z, float max_z)
+void fill_image(const char *filename, cv::Mat &heightmap_8uc1_img, float min_x, float max_x, float min_y, float max_y, float min_z, float max_z, int l_type_filter = -1)
 {
     FILE *f = NULL;
-    int delta_x, delta_y, delta_z;
+    int delta_x, delta_y;
     float fx, fy, fz;
     int x, y, l_type;
     int stride;
-    int num_points = 1;
     float range = 0.0f;
     float *sum_height = NULL;
     int *sum_height_count = NULL;
@@ -191,7 +194,6 @@ void fill_image(const char *filename, cv::Mat &heightmap_8uc1_img, float min_x, 
     // use exact image dimensions to avoid any rounding mismatch
     delta_x = heightmap_8uc1_img.cols;
     delta_y = heightmap_8uc1_img.rows;
-    delta_z = cvRound(max_z - min_z + 0.5f);
 
     stride = delta_x;
 
@@ -228,6 +230,9 @@ void fill_image(const char *filename, cv::Mat &heightmap_8uc1_img, float min_x, 
            fread(&fz, sizeof(float), 1, f) == 1 &&
            fread(&l_type, sizeof(int), 1, f) == 1)
     {
+        if (l_type_filter != -1 && l_type != l_type_filter)
+            continue;
+
         x = cvRound(fx - min_x);
         y = cvRound(max_y - fy);
 
@@ -238,7 +243,6 @@ void fill_image(const char *filename, cv::Mat &heightmap_8uc1_img, float min_x, 
 
         sum_height[y * stride + x] += fz;
         sum_height_count[y * stride + x] += 1;
-        num_points++;
     }
 
     fclose(f);
@@ -409,6 +413,23 @@ void process_lidar(const char *txt_filename, const char *bin_filename, const cha
     std::string prefix = (dot_pos != std::string::npos) ? base_output_filename.substr(0, dot_pos) : base_output_filename;
 
     cv::imwrite(prefix + "_canny" + extension, edgemap_8uc1_img);
+
+    // Create separate heightmaps for each l_type (0, 1, 2)
+    for (int lt = 0; lt <= 2; lt++)
+    {
+        float lt_min_x, lt_max_x, lt_min_y, lt_max_y, lt_min_z, lt_max_z;
+        if (get_min_max(bin_filename, &lt_min_x, &lt_max_x, &lt_min_y, &lt_max_y, &lt_min_z, &lt_max_z, lt))
+        {
+            cv::Mat lt_heightmap = cv::Mat::zeros(heightmap_8uc1_img.size(), CV_8UC1);
+            // We use global min_x, max_x, etc. for positioning (x, y)
+            // but lt_min_z, lt_max_z for normalization (value)
+            fill_image(bin_filename, lt_heightmap, min_x, max_x, min_y, max_y, lt_min_z, lt_max_z, lt);
+            
+            std::string lt_filename = prefix + "_ltype" + std::to_string(lt) + extension;
+            cv::imwrite(lt_filename, lt_heightmap);
+            printf("Saved heightmap for l_type %d to: %s\n", lt, lt_filename.c_str());
+        }
+    }
 
     // binarize image, so we can easily process it in the next step
     binarize_image(edgemap_8uc1_img);
