@@ -1,2 +1,5 @@
 .idea/
 cpp/build/
+python/.venv/
+**/__pycache__/
+*.pyc
