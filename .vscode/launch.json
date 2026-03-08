@@ -2,6 +2,15 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Python: Tutorial 8",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/python/tutorial_8.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "purpose": "debug-test"
+    },
+    {
       "name": "Python: Tutorial 7",
       "type": "debugpy",
       "request": "launch",
