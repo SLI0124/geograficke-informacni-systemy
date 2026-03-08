@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GIS Tutorial 6 - Leaflet ImageOverlay</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        #map { width: 100%; height: 600px; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+        // Tutorial 6: Leaflet map implementation
+        var map = L.map('map').setView([49.853, 18.523], 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Coordinates obtained from gis tool output
+        var imageBounds = [[49.850347, 18.519789], [49.855761, 18.526561]];
+        
+        // Ensure you have the image file in the correct path or update this URL
+        var imageUrl = 'data/pt000023_heightmap.png';
+
+        L.imageOverlay(imageUrl, imageBounds, {
+            opacity: 0.7,
+            interactive: true
+        }).addTo(map);
+
+        L.rectangle(imageBounds, {color: "#ff7800", weight: 1, fill: false}).addTo(map);
+    </script>
+</body>
+</html>

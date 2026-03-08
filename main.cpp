@@ -448,6 +448,37 @@ void process_lidar(const char *txt_filename, const char *bin_filename, const cha
     cv::imwrite(prefix + "_heightmap" + extension, heightmap_8uc1_img);
     printf("Saved images to: %s_*.png\n", prefix.c_str());
 
+    // Tutorial 6: S-JTSK to WGS84 transformation for Leaflet bounding box
+    PJ_CONTEXT *C = proj_context_create();
+    PJ *P = proj_create_crs_to_crs(C,
+        "+proj=krovak +ellps=bessel +towgs84=570.8,85.7,462.8,4.998,1.587,5.261,3.56",
+        "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs",
+        NULL);
+
+    if (P == NULL) {
+        fprintf(stderr, "Failed to create PROJ transformation.\n");
+    } else {
+        PJ_COORD min_coord = proj_coord(min_x, min_y, 0, 0);
+        PJ_COORD max_coord = proj_coord(max_x, max_y, 0, 0);
+
+        PJ_COORD min_wgs84 = proj_trans(P, PJ_FWD, min_coord);
+        PJ_COORD max_wgs84 = proj_trans(P, PJ_FWD, max_coord);
+
+        // Leaflet BBox: [ [min_lat, min_lon], [max_lat, max_lon] ]
+        // PJ_COORD returns (lon, lat) for longlat projection
+        printf("\n--- Tutorial 6: Leaflet Coordinates (WGS84) ---\n");
+        printf("Min BBox (lat, lon): %f, %f\n", min_wgs84.lp.phi, min_wgs84.lp.lam);
+        printf("Max BBox (lat, lon): %f, %f\n", max_wgs84.lp.phi, max_wgs84.lp.lam);
+        printf("Leaflet bounds snippet:\n");
+        printf("var imageBounds = [[%f, %f], [%f, %f]];\n", 
+               min_wgs84.lp.phi, min_wgs84.lp.lam, 
+               max_wgs84.lp.phi, max_wgs84.lp.lam);
+        printf("-----------------------------------------------\n");
+
+        proj_destroy(P);
+    }
+    proj_context_destroy(C);
+
     // wait here for user input using (mouse clicking)
     while (1)
     {
