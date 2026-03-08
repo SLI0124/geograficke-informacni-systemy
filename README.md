@@ -4,23 +4,53 @@ Geografické informační systémy (GIS) představují oblast, která je dnes vy
 
 Stránka kurzu: <https://mrl.cs.vsb.cz//people/gaura/gis_course.html>
 
-## ⚙️ Požadavky (Arch Linux)
+## ⚙️ Požadavky
 
-Nainstaluj balíčky:
+### C++
+
+- **CMake** (3.10+)
+- **GCC** nebo **Clang**
+- **OpenCV**
+- **PROJ**
+- **PkgConfig**
+
+### Python
+
+- **Python 3**
+- **Matplotlib**
+
+## 🛠️ C++ Projekt
+
+### Build
 
 ```bash
-sudo pacman -S --needed cmake gcc opencv proj pkgconf hdf5 vtk gdb
-```
-
-## 🛠️ Build
-
-```bash
+cd cpp
 cmake -S . -B build
 cmake --build build --parallel
 ```
 
-## ▶️ Spuštění
+### Spuštění (C++)
 
 ```bash
-./build/gis dummy.txt ./data/pt000023.bin ./data/pt000023.png
+./build/gis ../data/dummy.txt ../data/pt000023.bin ../data/pt000023.png
+```
+
+## 🐍 Python Projekt
+
+### Nastavení prostředí
+
+Pro instalaci závislostí můžete použít virtuální prostředí:
+
+```bash
+cd python
+python3 -m venv .venv --prompt geo_vsb  
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Spuštění (Python 3)
+
+```bash
+python tutorial_7.py
+python tutorial_8.py
 ```
