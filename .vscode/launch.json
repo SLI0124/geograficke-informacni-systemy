@@ -2,17 +2,21 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Python: Tutorial 7",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/python/tutorial_7.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}"
+    },
+    {
       "name": "CMake Launch",
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/cpp/build/gis",
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "CMake: build",
-      "args": [
-        "dummy.txt",
-        "data/pt000023.bin",
-        "data/pt000023.png"
-      ],
+      "args": ["dummy.txt", "data/pt000023.bin", "data/pt000023.png"],
       "MIMode": "gdb",
       "internalConsoleOptions": "neverOpen",
       "symbolLoadInfo": {

@@ -1,5 +1,8 @@
 {
   "cmake.sourceDirectory": "${workspaceFolder}/cpp",
   "cmake.buildDirectory": "${workspaceFolder}/cpp/build",
-  "json.validate.enable": false
+  "json.validate.enable": false,
+  "cmake.configureOnOpen": true,
+  "python.defaultInterpreterPath": "${workspaceFolder}/python/.venv/bin/python",
+  "python.analysis.extraPaths": ["${workspaceFolder}/python"]
 }
