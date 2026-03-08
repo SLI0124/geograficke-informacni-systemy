@@ -5,13 +5,13 @@
       "name": "CMake Launch",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${command:cmake.launchTargetPath}",
+      "program": "${workspaceFolder}/cpp/build/gis",
       "cwd": "${workspaceFolder}",
       "preLaunchTask": "CMake: build",
       "args": [
         "dummy.txt",
-        "${workspaceFolder}/data/pt000023.bin",
-        "${workspaceFolder}/data/pt000023.png"
+        "data/pt000023.bin",
+        "data/pt000023.png"
       ],
       "MIMode": "gdb",
       "internalConsoleOptions": "neverOpen",

@@ -5,7 +5,7 @@
       "label": "CMake: build",
       "type": "shell",
       "command": "cmake",
-      "args": ["--build", "${workspaceFolder}/build", "--parallel"],
+      "args": ["--build", "${workspaceFolder}/cpp/build", "--parallel"],
       "group": "build",
       "problemMatcher": ["$gcc"]
     }
